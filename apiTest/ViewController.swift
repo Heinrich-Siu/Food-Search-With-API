@@ -1,6 +1,6 @@
 import UIKit
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, UITableViewDelegate {
     
     //storyBoard variables
     @IBOutlet weak var image: UIImageView!
@@ -13,16 +13,19 @@ class ViewController: UIViewController {
     @IBOutlet weak var stepper: UIStepper!
     @IBOutlet weak var resultNumberText: UILabel!
     
+    var resultArray : [FoodItem] = []
+    var selectedRow : Int?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
-        setImage(from: "https://spoonacular.com/recipeImages/Gluten-Free-Chicken-Bruschetta--AD--CookItGF-593785.jpg")
+        setImage(from: "https://spoonacular.com/recipeImages/Gluten-Free-Chicken-Bruschetta--AD--CookItGF-593785.jpg")//initial image
         resultTable.dataSource = self
+        resultTable.delegate = self
         stepper.value = 3.0 //for number of search returns
         
     }
     
-    var resultArray : [FoodItem] = []
     
     func setImage(from url: String) {
         guard let imageURL = URL(string: url) else { return }
@@ -41,21 +44,13 @@ class ViewController: UIViewController {
         resultNumberText.text = "Search for \(Int(stepper.value)) results"
     }
     
-    @IBAction func exitEdit(_ sender: Any) {
-        view.endEditing(true) //dismiss keyboard
-    }
-    
     @IBAction func searchFood(_ sender: Any) {
         
         view.endEditing(true)
         if searchbar.text! != "" {
             let dishes = FoodSearch()
             resultArray = dishes.searchRecipie(name: searchbar.text!, resultNumber: Int(stepper.value))
-            print(Int(stepper.value))
-            name.text = "Name: \(resultArray[0].title)"
-            time.text = "Time: \(resultArray[0].readyInMinutes) minutes"
-            serving.text = "Serving for: \(resultArray[0].servings) people"
-            resultTable.reloadData()
+            updateDish(index: 0)
         }
     }
     
@@ -63,13 +58,27 @@ class ViewController: UIViewController {
         
         if segue.identifier == "dishDetail"{
             let destinationVC = segue.destination as! DishDetailViewController
-            
+            destinationVC.food = resultArray[selectedRow ?? 0]
+            /*
             if let indexPath = resultTable.indexPathForSelectedRow{
                 let selectedRow = indexPath.row
+                print(indexPath.row)
                 destinationVC.food = resultArray[selectedRow]
             }
+ */
         }
     }
+    
+    func updateDish(index: Int){
+        name.text = "Name: \(resultArray[index].title)"
+        time.text = "Time: \(resultArray[index].readyInMinutes) minutes"
+        serving.text = "Serving for: \(resultArray[index].servings) people"
+        print(resultArray[index].image)
+        setImage(from: "https://spoonacular.com/recipeImages/"+resultArray[index].image)
+        resultTable.reloadData()
+    }
+    
+    
     
 }
 
@@ -83,6 +92,15 @@ extension ViewController : UITableViewDataSource{
         cell.textLabel?.text = String(resultArray[indexPath.row].title)
         return cell
     }
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        updateDish(index: indexPath.row)
+    }
+    func tableView(_ tableView: UITableView, leadingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
+        selectedRow = indexPath.row
+        performSegue(withIdentifier: "dishDetail", sender: nil)
+        return nil
+    }
+    
     
     
 }
